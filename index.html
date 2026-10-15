@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELKA — Link Generator & Verify Gate</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        .clean-card {
+            background: #ffffff;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            border: 1px solid #f1f5f9;
+        }
+    </style>
+</head>
+<body class="h-full bg-[#f8fafc] text-slate-800 font-sans antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+
+    <!-- Top Brand Bar -->
+    <nav class="w-full bg-white/85 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-sm">
+                <i class="fa-solid fa-shield-halved text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-900 text-sm tracking-wide">ELKA VERIFY GATE</h1>
+                <p class="text-[11px] text-slate-400 font-medium">Link Generator & Protection Protocol</p>
+            </div>
+        </div>
+        <div id="env-badge" class="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> <span id="env-text">Mode Preview Lokal</span>
+        </div>
+    </nav>
+
+    <!-- Main Generator Container -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-2xl">
+            <div class="clean-card rounded-3xl p-6 sm:p-10">
+                
+                <div class="text-center mb-8">
+                    <span class="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-semibold uppercase tracking-wider mb-2">Platform Pembuat Link</span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Create Your Download Link</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Masukkan URL file download dan tentukan tugas verifikasi sosial media bagi pengunjung Anda.</p>
+                </div>
+
+                <form id="generator-form" onsubmit="handleGenerateLink(event)" class="space-y-6">
+                    <!-- File Details Section -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">1. Informasi File & Tujuan</h3>
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Nama File / Judul Download <span class="text-red-500">*</span></label>
+                            <input type="text" id="file-name" required placeholder="Contoh: ELKA Creator Toolkit v4.2" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50/50">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Deskripsi File</label>
+                            <textarea id="file-desc" rows="2" placeholder="Kumpulan aset desain premium dan script otomatisasi..." class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50/50"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">URL Download Asli (Google Drive, MediaFire, dll) <span class="text-red-500">*</span></label>
+                            <input type="url" id="file-url" required placeholder="https://drive.google.com/uc?id=..." class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50/50">
+                        </div>
+                    </div>
+
+                    <!-- Tasks Builder Section -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">2. Daftar Tugas Verifikasi</h3>
+                            <button type="button" onclick="addTaskRow()" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg transition flex items-center gap-1 cursor-pointer">
+                                <i class="fa-solid fa-plus text-[10px]"></i> Tambah Tugas
+                            </button>
+                        </div>
+
+                        <div id="tasks-container" class="space-y-3">
+                            <!-- Dynamic task rows will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-4">
+                        <button type="submit" id="submit-btn" class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow-lg transition text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> BUAT LINK VERIFIKASI
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Result Box (Hidden by default) -->
+                <div id="result-box" class="hidden mt-8 p-5 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs sm:text-sm font-bold text-emerald-900">Link Preview Berhasil Dibuat!</h4>
+                            <p class="text-[11px] text-emerald-700">Link disimpan di server dan dapat dibagikan. Konfirmasi tugas dilakukan secara manual.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 mt-3">
+                        <input type="text" id="generated-url-input" readonly class="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs text-slate-700 font-mono focus:outline-none">
+                        <button onclick="copyGeneratedLink()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition shrink-0 cursor-pointer flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> Salin
+                        </button>
+                        <a id="preview-link-btn" href="#" target="_blank" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shrink-0 cursor-pointer flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-100 bg-white/50">
+        &copy; 2026 ELKA Verify Gate Protocol &bull; Secure URL Shortener & Verification
+    </footer>
+
+    <!-- Notification Modal -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div id="modal-box" class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-100 transform transition-all scale-95 opacity-0 duration-200">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-base font-bold shrink-0">
+                    <i id="modal-icon" class="fa-solid fa-circle-info"></i>
+                </div>
+                <div>
+                    <h3 id="modal-title" class="text-base font-bold text-slate-900">Informasi</h3>
+                </div>
+            </div>
+            <p id="modal-message" class="text-xs sm:text-sm text-slate-600 mb-5 leading-relaxed"></p>
+            <div class="flex justify-end">
+                <button onclick="closeModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition cursor-pointer">Mengerti</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PRESET_TASKS = [
+            { platform: "Instagram", title: "Follow Instagram Resmi", icon: "fa-brands fa-instagram", color: "bg-pink-50 text-pink-700 border-pink-200" },
+            { platform: "YouTube", title: "Subscribe YouTube Channel", icon: "fa-brands fa-youtube", color: "bg-red-50 text-red-700 border-red-200" },
+            { platform: "TikTok", title: "Ikuti Akun TikTok", icon: "fa-brands fa-tiktok", color: "bg-slate-100 text-slate-800 border-slate-200" },
+            { platform: "Telegram", title: "Join Channel Telegram", icon: "fa-brands fa-telegram", color: "bg-sky-50 text-sky-700 border-sky-200" },
+            { platform: "Discord", title: "Join Server Discord", icon: "fa-brands fa-discord", color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+            { platform: "Website", title: "Kunjungi Website Partner", icon: "fa-solid fa-globe", color: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+        ];
+
+        let taskRowsCount = 0;
+
+        function showModal(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            const backdrop = document.getElementById('modal-backdrop');
+            const box = document.getElementById('modal-box');
+            backdrop.classList.remove('hidden');
+            setTimeout(() => { box.classList.remove('scale-95', 'opacity-0'); box.classList.add('scale-100', 'opacity-100'); }, 10);
+        }
+
+        function closeModal() {
+            const backdrop = document.getElementById('modal-backdrop');
+            const box = document.getElementById('modal-box');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { backdrop.classList.add('hidden'); }, 150);
+        }
+
+        function addTaskRow(preset = null) {
+            taskRowsCount++;
+            const container = document.getElementById('tasks-container');
+            const rowId = `task-row-${taskRowsCount}`;
+
+            const selectedPlatform = preset ? preset.platform : 'Instagram';
+            const selectedTitle = preset ? preset.title : 'Follow Instagram Resmi';
+            const selectedIcon = preset ? preset.icon : 'fa-brands fa-instagram';
+            const selectedColor = preset ? preset.color : 'bg-pink-50 text-pink-700 border-pink-200';
+
+            const div = document.createElement('div');
+            div.id = rowId;
+            div.className = "p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3 relative";
+            div.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center">${taskRowsCount}</span>
+                        <select onchange="updateTaskPreset('${rowId}')" class="task-platform px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none">
+                            <option value="Instagram" ${selectedPlatform==='Instagram'?'selected':''}>Instagram</option>
+                            <option value="YouTube" ${selectedPlatform==='YouTube'?'selected':''}>YouTube</option>
+                            <option value="TikTok" ${selectedPlatform==='TikTok'?'selected':''}>TikTok</option>
+                            <option value="Telegram" ${selectedPlatform==='Telegram'?'selected':''}>Telegram</option>
+                            <option value="Discord" ${selectedPlatform==='Discord'?'selected':''}>Discord</option>
+                            <option value="Website" ${selectedPlatform==='Website'?'selected':''}>Website / Kunjungan</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[11px] font-semibold text-slate-500 flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" class="task-required rounded text-blue-600 focus:ring-blue-500" checked> Wajib
+                        </label>
+                        <button type="button" onclick="removeTaskRow('${rowId}')" class="text-slate-400 hover:text-red-600 p-1 transition cursor-pointer" title="Hapus Tugas">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" class="task-title px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="Judul Tugas" value="${selectedTitle}" required>
+                    <input type="url" class="task-url px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="URL Tujuan (https://...)" required>
+                </div>
+                <input type="hidden" class="task-icon" value="${selectedIcon}">
+                <input type="hidden" class="task-color" value="${selectedColor}">
+            `;
+            container.appendChild(div);
+        }
+
+        function removeTaskRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) row.remove();
+        }
+
+        function updateTaskPreset(rowId) {
+            const row = document.getElementById(rowId);
+            const platform = row.querySelector('.task-platform').value;
+            const preset = PRESET_TASKS.find(p => p.platform === platform) || PRESET_TASKS[0];
+            row.querySelector('.task-title').value = preset.title;
+            row.querySelector('.task-icon').value = preset.icon;
+            row.querySelector('.task-color').value = preset.color;
+        }
+
+        async function handleGenerateLink(e) {
+            e.preventDefault();
+            const fileName = document.getElementById('file-name').value.trim();
+            const fileDescription = document.getElementById('file-desc').value.trim();
+            const finalDownloadUrl = document.getElementById('file-url').value.trim();
+
+            try {
+                const download = new URL(finalDownloadUrl);
+                if (!['http:', 'https:'].includes(download.protocol)) throw new Error();
+            } catch {
+                showModal('URL Tidak Valid', 'Masukkan URL download yang valid dengan awalan https:// atau http://.');
+                return;
+            }
+
+            const rowElements = [...document.querySelectorAll('#tasks-container > div')];
+            if (!rowElements.length) {
+                showModal('Peringatan', 'Harap tambahkan minimal 1 tugas verifikasi.');
+                return;
+            }
+
+            const tasks = [];
+            for (const [index, row] of rowElements.entries()) {
+                const taskUrl = row.querySelector('.task-url').value.trim();
+                try {
+                    const parsed = new URL(taskUrl);
+                    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+                } catch {
+                    showModal('URL Tugas Tidak Valid', 'Setiap URL tugas harus menggunakan http:// atau https://.');
+                    return;
+                }
+                tasks.push({
+                    id: `t_${index + 1}_${Math.random().toString(36).slice(2, 8)}`,
+                    platform: row.querySelector('.task-platform').value,
+                    title: row.querySelector('.task-title').value.trim(),
+                    url: taskUrl,
+                    required: row.querySelector('.task-required').checked,
+                    icon: row.querySelector('.task-icon').value,
+                    colorClass: row.querySelector('.task-color').value,
+                    description: 'Buka tugas, selesaikan, lalu konfirmasi secara manual.'
+                });
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
+            const payload = {
+                fileName, fileDescription, finalDownloadUrl,
+                tasks, createdAt: new Date().toISOString(), views: 0
+            };
+
+            try {
+                const response = await fetch('/api/links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Gagal menyimpan link.');
+                const generatedUrl = `${window.location.origin}/verification_page.html?id=${encodeURIComponent(result.id)}`;
+                displaySuccessResult(generatedUrl, submitBtn);
+                document.getElementById('env-text').innerText = 'Server Online';
+            } catch (err) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> BUAT LINK VERIFIKASI`;
+                showModal('Gagal Membuat Link', err.message || 'Backend tidak bisa dihubungi. Pastikan proyek dijalankan melalui server, bukan dibuka sebagai file lokal.');
+            }
+        }
+
+        function displaySuccessResult(generatedUrl, submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> BUAT LINK VERIFIKASI`;
+
+            document.getElementById('generated-url-input').value = generatedUrl;
+            document.getElementById('preview-link-btn').href = generatedUrl;
+            document.getElementById('result-box').classList.remove('hidden');
+            document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('env-text').innerText = 'Server Online';
+        }
+
+        function copyGeneratedLink() {
+            const input = document.getElementById('generated-url-input');
+            input.select();
+            document.execCommand('copy');
+            showModal('Berhasil!', 'Link verifikasi berhasil disalin ke clipboard.');
+        }
+
+        window.onload = function() {
+            addTaskRow(PRESET_TASKS[0]);
+            addTaskRow(PRESET_TASKS[3]);
+        };
+    </script>
+</body>
+</html>

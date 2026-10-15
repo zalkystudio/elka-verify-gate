@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELKA — Download Verification</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } }
+            }
+        }
+    </script>
+    <style>
+        .clean-card {
+            background: #ffffff;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            border: 1px solid #f1f5f9;
+        }
+    </style>
+</head>
+<body class="h-full bg-[#f8fafc] text-slate-800 font-sans antialiased flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+
+    <!-- Top Minimalist Brand Bar -->
+    <nav class="w-full bg-white/85 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-sm">
+                <i class="fa-solid fa-shield-halved text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-900 text-sm tracking-wide">ELKA GATE</h1>
+                <p class="text-[11px] text-slate-400 font-medium">Secure Access Protocol</p>
+            </div>
+        </div>
+        <div class="text-xs text-slate-500 font-medium">
+            <i class="fa-regular fa-clock mr-1"></i> Sesi Aman
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+        <div id="app-container" class="w-full max-w-md">
+            <!-- Loading State -->
+            <div class="clean-card rounded-3xl p-8 text-center space-y-3">
+                <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p class="text-xs text-slate-500 font-medium">Memuat konfigurasi verifikasi...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-100 bg-white/50">
+        &copy; 2026 ELKA Verify Protocol &bull; All Rights Reserved.
+    </footer>
+
+    <!-- Notification Modal -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div id="modal-box" class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-100 transform transition-all scale-95 opacity-0 duration-200">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-base font-bold shrink-0">
+                    <i id="modal-icon" class="fa-solid fa-circle-info"></i>
+                </div>
+                <div>
+                    <h3 id="modal-title" class="text-base font-bold text-slate-900">Informasi Verifikasi</h3>
+                </div>
+            </div>
+            <p id="modal-message" class="text-xs sm:text-sm text-slate-600 mb-5 leading-relaxed"></p>
+            <div class="flex justify-end">
+                <button onclick="closeModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition cursor-pointer">Mengerti</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let linkData = null;
+        let verificationState = {};
+
+        function showModal(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            const backdrop = document.getElementById('modal-backdrop');
+            const box = document.getElementById('modal-box');
+            backdrop.classList.remove('hidden');
+            setTimeout(() => { box.classList.remove('scale-95', 'opacity-0'); box.classList.add('scale-100', 'opacity-100'); }, 10);
+        }
+
+        function closeModal() {
+            const backdrop = document.getElementById('modal-backdrop');
+            const box = document.getElementById('modal-box');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { backdrop.classList.add('hidden'); }, 150);
+        }
+
+        async function fetchLinkConfig() {
+            const linkId = new URLSearchParams(window.location.search).get('id');
+            if (!linkId || !/^[a-zA-Z0-9_-]{6,40}$/.test(linkId)) {
+                showErrorState("ID link tidak valid. Buat link baru dari halaman generator.");
+                return;
+            }
+            try {
+                const response = await fetch(`/api/links/${encodeURIComponent(linkId)}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Link tidak ditemukan.');
+                loadRecord(data);
+            } catch (err) {
+                showErrorState(err.message || 'Gagal memuat data link dari server.');
+            }
+        }
+
+        function loadRecord(data) {
+            linkData = data;
+            const saved = sessionStorage.getItem(`elka_state_${linkData.id}`);
+            if (saved) {
+                try { verificationState = JSON.parse(saved); } catch(e) { verificationState = {}; }
+            } else {
+                linkData.tasks.forEach(t => { verificationState[t.id] = 'pending'; });
+            }
+            renderApp();
+        }
+
+        function saveState() {
+            if (!linkData) return;
+            sessionStorage.setItem(`elka_state_${linkData.id}`, JSON.stringify(verificationState));
+        }
+
+        function showErrorState(msg) {
+            document.getElementById('app-container').innerHTML = `
+                <div class="clean-card rounded-3xl p-8 text-center space-y-3">
+                    <div class="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto text-lg">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">Gagal Memuat Halaman</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">${msg}</p>
+                    <div class="pt-2">
+                        <a href="index.html" class="inline-block px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold">Buat Link Baru</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderApp() {
+            if (!linkData) return;
+            const container = document.getElementById('app-container');
+
+            const requiredTasks = linkData.tasks.filter(t => t.required);
+            const verifiedRequiredCount = requiredTasks.filter(t => verificationState[t.id] === 'verified').length;
+            const allRequiredDone = requiredTasks.length === 0 || verifiedRequiredCount === requiredTasks.length;
+
+            const totalVerifiedCount = Object.values(verificationState).filter(s => s === 'verified').length;
+            const progressPercent = linkData.tasks.length > 0 ? Math.round((totalVerifiedCount / linkData.tasks.length) * 100) : 100;
+
+            let html = `
+                <div class="clean-card rounded-3xl p-6 sm:p-8">
+                    <div class="text-center mb-6">
+                        <span class="inline-block px-3.5 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-semibold uppercase tracking-wider mb-2.5">ELKA &mdash; Download Verification</span>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-1">${escapeHtml(linkData.fileName)}</h2>
+                        <p class="text-xs text-slate-500 line-clamp-2 px-1">${escapeHtml(linkData.fileDescription)}</p>
+                    </div>
+
+                    <div class="mb-6 bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
+                        <div class="flex justify-between items-center text-xs font-semibold mb-2">
+                            <span class="text-slate-700">Persyaratan Wajib</span>
+                            <span class="text-blue-600 font-bold">${verifiedRequiredCount} / ${requiredTasks.length} Selesai</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 mb-6">
+            `;
+
+            linkData.tasks.forEach(task => {
+                const status = verificationState[task.id] || 'pending';
+                let badgeHTML = '';
+                let btnText = status === 'opened' ? 'Saya sudah menyelesaikan' : 'Buka Tugas';
+                let btnClass = 'bg-slate-900 hover:bg-slate-800 text-white';
+
+                if (status === 'verified') {
+                    badgeHTML = `<span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-[10px] font-semibold flex items-center gap-1 w-fit"><i class="fa-solid fa-check text-[9px]"></i> Terverifikasi</span>`;
+                    btnText = 'Selesai';
+                    btnClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default font-semibold';
+                } else if (status === 'opened') {
+                    badgeHTML = `<span class="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-[10px] font-semibold">Menunggu konfirmasi</span>`;
+                    btnClass = 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200';
+                } else if (status === 'checking') {
+                    badgeHTML = `<span class="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-[10px] font-semibold flex items-center gap-1 w-fit"><i class="fa-solid fa-spinner fa-spin text-[9px]"></i> Memeriksa...</span>`;
+                    btnText = 'Memeriksa...';
+                    btnClass = 'bg-amber-50 text-amber-700 border border-amber-200 cursor-wait';
+                } else {
+                    badgeHTML = `<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-medium w-fit">Belum Selesai</span>`;
+                }
+
+                html += `
+                    <div class="p-3.5 rounded-2xl border border-slate-200/80 bg-white shadow-xs flex items-center justify-between gap-3 transition">
+                        <div class="flex items-start space-x-3 overflow-hidden">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 text-base mt-0.5 border border-blue-200">
+                                <i class="${escapeHtml(task.icon)}"></i>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <h4 class="text-xs font-bold text-slate-900 truncate">${escapeHtml(task.title)}</h4>
+                                    ${task.required ? '<span class="text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase">Wajib</span>' : '<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">Opsional</span>'}
+                                </div>
+                                <p class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtml(task.description)}</p>
+                                <div class="mt-1.5">${badgeHTML}</div>
+                            </div>
+                        </div>
+                        <div class="shrink-0">
+                            <button onclick="handleTaskClick('${task.id}', '${encodeURIComponent(task.url)}')" class="px-3.5 py-2 rounded-xl text-xs transition font-medium shadow-xs cursor-pointer ${btnClass}" ${status === 'verified' || status === 'checking' ? 'disabled' : ''}>
+                                <i class="fa-solid fa-arrow-up-right-from-square mr-1 text-[10px]"></i> ${btnText}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <div>
+            `;
+
+            if (allRequiredDone) {
+                html += `
+                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center mb-3.5">
+                        <p class="text-xs font-semibold text-emerald-800"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Persyaratan terpenuhi!</p>
+                    </div>
+                    <button onclick="executeDownload()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-download text-base"></i> BUKA LINK DOWNLOAD
+                    </button>
+                `;
+            } else {
+                html += `
+                    <button disabled class="w-full py-4 bg-slate-100 text-slate-400 font-bold rounded-2xl cursor-not-allowed text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-200">
+                        <i class="fa-solid fa-lock"></i> Selesaikan Tugas Wajib
+                    </button>
+                `;
+            }
+
+            html += `</div></div>`;
+            container.innerHTML = html;
+        }
+
+        function handleTaskClick(taskId, encodedUrl) {
+            const status = verificationState[taskId] || 'pending';
+            if (status === 'opened') {
+                if (confirm('Konfirmasi bahwa kamu sudah menyelesaikan tugas ini? Situs ini tidak dapat memastikan follow/subscribe hanya dari klik.')) {
+                    verificationState[taskId] = 'verified';
+                    saveState();
+                    renderApp();
+                }
+                return;
+            }
+            try {
+                const parsed = new URL(decodeURIComponent(encodedUrl));
+                if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('URL tidak aman');
+                window.open(parsed.href, '_blank', 'noopener,noreferrer');
+                verificationState[taskId] = 'opened';
+                saveState();
+                renderApp();
+            } catch (e) {
+                showModal('URL Tidak Valid', 'URL tugas harus berupa alamat HTTP atau HTTPS yang valid.');
+            }
+        }
+
+        function executeDownload() {
+            if (!linkData || !linkData.finalDownloadUrl) {
+                showModal('URL Belum Dikonfigurasi', 'URL download tujuan belum diatur pada link ini.');
+                return;
+            }
+            try {
+                const target = new URL(linkData.finalDownloadUrl);
+                if (!['http:', 'https:'].includes(target.protocol)) throw new Error('URL tidak aman');
+                window.location.assign(target.href);
+            } catch (e) {
+                showModal('URL Download Tidak Valid', 'Periksa URL download yang dimasukkan saat membuat link.');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.onload = function() {
+            fetchLinkConfig();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "elka-verify-gate",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ELKA Verify Gate generator and public verification page",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
